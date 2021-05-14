@@ -294,15 +294,12 @@ void dmmult(double **a, int a_rows, int a_cols,
       }
 }
 
-#ifdef _BLAS_
 void dmtransmult(double **a, int a_rows, int a_cols, double **y)
 {
+#ifdef _BLAS_
    cblas_dsyrk(CblasRowMajor, CblasUpper, CblasTrans,
          a_cols, a_rows, 1, &a[1][1], a_cols, 0, &y[1][1], a_cols);
-}
 #else
-void dmtransmult (double **a, int a_rows, int a_cols, double **y)
-{
    int i, j, k;
    double sum;
 
@@ -326,28 +323,25 @@ void dmtransmult (double **a, int a_rows, int a_cols, double **y)
    for (i = 1; i <= a_cols; i++)
       for (j = 1; j < i; j++)
          y[i][j] = y[j][i];
-}
 #endif
+}
 
-#ifdef _BLAS_
-void dsymvmult(double **a, int n, double alpha, double *b,  double *y)
+void dsymvmult(double **a, int n, double *b, double *y)
 {
-   cblas_dsymv(CblasRowMajor, CblasUpper, n, alpha, &a[1][1], n, &b[1], 1, 0, &y[1], 1);
-}
-#endif
-
 #ifdef _BLAS_
+   cblas_dsymv(CblasRowMajor, CblasUpper, n, 1, &a[1][1], n, &b[1], 1, 0, &y[1], 1);
+#else
+   dmvmult(a, n, n, b, n, y);
+#endif
+}
+
 void dmvmult(double **a, int a_rows, int a_cols,
              double *b, int b_els, double *y)
 {
+#ifdef _BLAS_
    cblas_dgemv(CblasRowMajor, CblasNoTrans, a_rows, a_cols, 1, &a[1][1],
          a_cols, &b[1], 1, 0, &y[1], 1);
-}
 #else
-void dmvmult(double **a, int a_rows, int a_cols,
-             double *b, int b_els, double *y)
-/* multiply a matrix a by vector b, result in y. y can be same as b */
-{
    int i, k;
    double sum;
 
@@ -362,21 +356,16 @@ void dmvmult(double **a, int a_rows, int a_cols,
       for (k=1; k <= a_cols; k++) sum += a[i][k]*b[k];
       y[i] = sum;
    }
-}
 #endif
+}
 
-#ifdef _BLAS_
 void dmvtransmult(double **a, int a_rows, int a_cols,
              double *b, int b_els, double *y)
 {
+#ifdef _BLAS_
    cblas_dgemv(CblasRowMajor, CblasTrans, a_rows, a_cols, 1, &a[1][1], 
          a_cols, &b[1], 1, 0, &y[1], 1);
-}
 #else
-void dmvtransmult(double **a, int a_rows, int a_cols,
-                  double *b, int b_els, double *y)
-/* multiply a matrix a' by vector b, result in y. y can be same as b */
-{
    int j, k;
    double sum;
 
@@ -391,8 +380,8 @@ void dmvtransmult(double **a, int a_rows, int a_cols,
       for (k=1; k <= a_rows; k++) sum += a[k][j]*b[k];
       y[j] = sum;
    }
-}
 #endif
+}
 
 void dmtranspose(double **a, int a_rows, int a_cols, double **y)
 /* transpose matrix a, result in y. y must not be same as a */
@@ -423,52 +412,44 @@ void dvset(double *a, int a_els, double val)
       a[i] = val;
 }
 
+void dvcopy(double *a, int a_els, double *y)
+{
 #ifdef _BLAS_
-void dvcopy(double *a, int a_els, double *y)
-{
    cblas_dcopy(a_els, &a[1], 1, &y[1], 1);
-}
 #else
-void dvcopy(double *a, int a_els, double *y)
-{
    int i;
 
    for (i=1; i <= a_els; i++)
       y[i] = a[i];
-}
 #endif
-
-#ifdef _BLAS_
-void dmcopy(double **a, int a_rows, int a_cols, double **y)
-{
-   int i;
-   /* bugged!! does not copy first value */
-   /*dvcopy(&a[1][1], a_rows*a_cols, &y[1][1]);*/
-   for(i=1; i<=a_rows; i++)
-      dvcopy(a[i], a_cols, y[i]);
-
 }
-#else
+
 void dmcopy(double **a, int a_rows, int a_cols, double **y)
 {
    int i;
    for(i=1; i<=a_rows; i++)
       dvcopy(a[i], a_cols, y[i]);
-}
-#endif
 
-#ifdef _BLAS_
+}
+
 void dscal(double *a, int a_els, double r)
 {
+#ifdef _BLAS_
    cblas_dscal(a_els, r, &a[1], 1);
+#else
+   dvsmy(a, a_els, r, a);
+#endif
 }
 
 /* y = ax + y */
 void daxpy(double *a, int a_els, double r, double *y)
 {
+#ifdef _BLAS_
    cblas_daxpy(a_els, r, &a[1], 1, &y[1], 1);
-}
+#else
+   dvpiv(a, a_els, r, y, y);
 #endif
+}
 
 void dvsmy( double *a, int a_els, double r, double *y)
 {
@@ -496,15 +477,12 @@ void dvsub(double *a, int a_els, double *b, double *y)
    dvpiv(b, a_els, -1, a, y);
 }
 
+double dvdot(double *a, int a_els, double *b)
+{
 #ifdef _BLAS_
-double dvdot(double *a, int a_els, double *b)
-{
    return cblas_ddot(a_els, &a[1], 1, &b[1], 1);
-}
 #else
-double dvdot(double *a, int a_els, double *b)
-{
-   int i;
+    int i;
    double y;
 
    y = 0.0;
@@ -512,8 +490,8 @@ double dvdot(double *a, int a_els, double *b)
       y += a[i] * b[i];
    }
    return y;
-}
 #endif
+}
 
 double dvinfnorm(double *a, int a_els)
 {
@@ -527,26 +505,22 @@ double dvinfnorm(double *a, int a_els)
    return max;
 }
 
-#ifdef _BLAS_
+
 double dv2norm(double *a, int a_els)
 {
-   return cblas_dnrm2(a_els, &a[1], 1);
-}
-#else
-double dv2norm(double *a, int a_els)
-{
-   return sqrt(dvdot(a, a_els, a));
-}
-#endif
 
 #ifdef _BLAS_
-double dv1norm(double *a, int a_els)
-{
-   return cblas_dasum(a_els, &a[1], 1);
-}
+   return cblas_dnrm2(a_els, &a[1], 1);
 #else
+   return sqrt(dvdot(a, a_els, a));
+#endif
+}
+
 double dv1norm(double *a, int a_els)
 {
+#ifdef _BLAS_
+   return cblas_dasum(a_els, &a[1], 1);
+#else
    int i;
    double y = 0.0;
 
@@ -554,8 +528,8 @@ double dv1norm(double *a, int a_els)
       y += fabs(a[i]);
 
    return y;
-}
 #endif
+}
 
 double dvpnorm(double *a, int a_els, int p)
 {
@@ -576,6 +550,26 @@ double dvnorm(double *a, int a_els, int p)
       case INF: return dvinfnorm(a, a_els);
       default:  return dvpnorm(a, a_els, p);
    }
+}
+
+double dv21norm(double *a, int a_els, int *grp, int ngrp)
+{
+   int i,j;
+   double norm = 0;
+
+   if (ngrp > 0)
+   {
+      for(i=0, j=0; i<ngrp; i++, j+=grp[i])
+      {
+         norm += dv2norm(&(a[j]), grp[i]);
+      }
+   }
+   else
+   {
+      norm = dv1norm(a, a_els);
+   }
+
+   return norm;
 }
 
 int dvnotzero(double *a, int a_els)

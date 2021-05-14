@@ -71,17 +71,16 @@ void dmcopy(double **a, int a_rows, int a_cols, double **y);
 void dmcolmean(double **a, int a_rows, int a_cols, double *mean, double *var);
 void dmprint(FILE *f, double **a, int a_rows, int a_cols);
 
-#ifdef _BLAS_
-void dsymvmult(double **a, int n, double alpha, double *b,  double *y);
+void dsymvmult(double **a, int n, double *b,  double *y);
 void dscal(double *a, int a_els, double r);
 void daxpy(double *a, int a_els, double r, double *y);
-#endif
 void dvsmy(double *a, int a_els, double r, double *y);
 void dvpiv(double *a, int a_els, double r, double *b, double *y);
 void dvadd(double *a, int a_els, double *b, double *y);
 void dvsub(double *a, int a_els, double *b, double *y);
 double dvdot(double *a, int a_els, double *b);
 double dvnorm(double *a, int a_els, int p);
+double dv21norm(double *a, int a_els, int *grp, int ngrp);
 void dvset(double *a, int a_els, double val);
 void dvcopy(double *a, int a_els, double *y);
 void dvmean(double *a, int a_els, double *mean, double *var);
